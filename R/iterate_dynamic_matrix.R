@@ -244,7 +244,7 @@ tf_iterate_dynamic_matrix <- function (state, ..., tf_matrix_function, niter, to
   tf_niter <- tf$constant(as.integer(niter), shape = shape(1, 1))
   
   # iterables needs to be a list of greta arrays
-  tf_iterables <- tf$stack(iterables, axis = 0L)
+  tf_iterables <- tf$stack(tf$constant(iterables, dtype = tf_float()), axis = 0L)
 
   # add convergence tolerance and indicator
   tf_tol <- tf$constant(tol, dtype = tf_float())
