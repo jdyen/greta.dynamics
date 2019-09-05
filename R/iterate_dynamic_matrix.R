@@ -82,7 +82,11 @@ iterate_dynamic_matrix <- function(
   state <- as.greta_array(initial_state)
   
   # set dummy input for iterx
-  iterx <- 1
+  iterx <- as_data(1)
+  
+  # what if iterables isn't provided?
+  if (is.null(iterables))
+    iterables <- as_data(1)
 
   # check input dimensions
   state_dim <- dim(state)
