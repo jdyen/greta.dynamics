@@ -176,6 +176,7 @@ as_tf_matrix_function <- function (matrix_function, state, iter, dots, iterx) {
     # to have same dim as a scalar constant so that it can be used in the same
     # way as the greta array in the R function
     iter <- tf$reshape(iter, shape = shape(1, 1, 1))
+    iterx <- tf$reshape(iterx, shape = shape(1))
 
     # tf_dots will have been added to this environment by
     # tf_iterate_dynamic_matrix
