@@ -73,12 +73,16 @@ iterate_dynamic_matrix <- function(
   initial_state,
   niter,
   tol,
-  ...
+  ...,
+  iterables = NULL
 ) {
 
   # generalise checking of inputs from iterate_matrix into functions
   niter <- as.integer(niter)
   state <- as.greta_array(initial_state)
+  
+  # set dummy input for iterx
+  iterx <- 1
 
   # check input dimensions
   state_dim <- dim(state)
@@ -102,7 +106,7 @@ iterate_dynamic_matrix <- function(
   # create a tensorflow function from the matrix function
   dots <- list(...)
   dots <- lapply(dots, as.greta_array)
-  tf_matrix_function <- as_tf_matrix_function(matrix_function, state, iter = as_data(1), dots)
+  tf_matrix_function <- as_tf_matrix_function(matrix_function, state, iter = as_data(1), dots, iterx)
 
   # op returning a fake greta array which is actually a list containing both
   # values and states
@@ -112,7 +116,8 @@ iterate_dynamic_matrix <- function(
                 operation_args = list(
                   tf_matrix_function = tf_matrix_function,
                   niter = niter,
-                  tol = tol
+                  tol = tol,
+                  iterables = iterables
                 ),
                 tf_operation = "tf_iterate_dynamic_matrix",
                 dim = c(1, 1))
@@ -149,22 +154,23 @@ iterate_dynamic_matrix <- function(
        all_states = all_states,
        converged = converged,
        iterations = iterations)
+  
 }
 
 # given a greta/R function derivative function, and greta arrays for the inputs,
 # return a tensorflow function taking tensors for y and t and returning a tensor
 # for dydt
-as_tf_matrix_function <- function (matrix_function, state, iter, dots) {
+as_tf_matrix_function <- function (matrix_function, state, iter, dots, iterx) {
 
   # create a function acting on the full set of inputs, as tensors
-  args <- list(r_fun = matrix_function, state = state, iter = iter)
+  args <- list(r_fun = matrix_function, state = state, iter = iter, iterx = iterx)
   tf_fun <- do.call(as_tf_function, c(args, dots))
 
   # for CRAN's benefit
   tf_dots <- NULL
 
   # return a function acting only on tensors y and t, to feed to the ode solver
-  function (state, iter) {
+  function (state, iter, iterx) {
 
     # t will be dimensionless when used in the ode solver, need to expand out t
     # to have same dim as a scalar constant so that it can be used in the same
@@ -173,7 +179,7 @@ as_tf_matrix_function <- function (matrix_function, state, iter, dots) {
 
     # tf_dots will have been added to this environment by
     # tf_iterate_dynamic_matrix
-    args <- list(state = state, iter = iter)
+    args <- list(state = state, iter = iter, iterx = iterx)
     do.call(tf_fun, c(args, tf_dots))
 
   }
@@ -183,18 +189,21 @@ as_tf_matrix_function <- function (matrix_function, state, iter, dots) {
 # tensorflow code
 # iterate matrix tensor `matrix` `niter` times, each time using and updating vector
 # tensor `state`, and return lambda for the final iteration
-tf_iterate_dynamic_matrix <- function (state, ..., tf_matrix_function, niter, tol) {
+tf_iterate_dynamic_matrix <- function (state, ..., tf_matrix_function, niter, tol, iterables) {
 
   # assign the dots (as tensors) to the matrix function's environment
   assign("tf_dots", list(...),
          environment(tf_matrix_function))
 
   # use a tensorflow while loop to do the recursion:
-  body <- function(old_state, t_all_states, growth_rates, converged, iter, maxiter) {
+  body <- function(old_state, t_all_states, growth_rates, converged, iter, maxiter, iterables) {
+    
+    # pull out element of iterables for iteration x
+    iterx <- tf$gather(iterables, iter)
 
     # create matrix (dots have been inserted into its environment, since TF
     # while loops are treacherous things)
-    matrix <- tf_matrix_function(old_state, iter)
+    matrix <- tf_matrix_function(old_state, iter, iterx)
 
     # do matrix multiplication
     new_state <- tf$matmul(matrix, old_state, transpose_a = FALSE)
@@ -216,7 +225,8 @@ tf_iterate_dynamic_matrix <- function (state, ..., tf_matrix_function, niter, to
       growth_rates,
       converged,
       iter + 1L,
-      maxiter
+      maxiter,
+      iterables
     )
 
   }
@@ -227,6 +237,9 @@ tf_iterate_dynamic_matrix <- function (state, ..., tf_matrix_function, niter, to
   # iter needs to have rank 2 for slice updating; make niter the same shape
   iter <- tf$constant(0L, shape = shape(1, 1))
   tf_niter <- tf$constant(as.integer(niter), shape = shape(1, 1))
+  
+  # iterables needs to be a list of greta arrays
+  tf_iterables <- tf$stack(iterables, axis = 0L)
 
   # add convergence tolerance and indicator
   tf_tol <- tf$constant(tol, dtype = tf_float())
@@ -254,7 +267,8 @@ tf_iterate_dynamic_matrix <- function (state, ..., tf_matrix_function, niter, to
     growth_rates,
     converged,
     iter,
-    tf_niter
+    tf_niter,
+    tf_iterables
   )
 
   # add tolerance next
@@ -264,7 +278,8 @@ tf_iterate_dynamic_matrix <- function (state, ..., tf_matrix_function, niter, to
     growth_rates,
     converged,
     iter,
-    maxiter
+    maxiter,
+    iterables
   ) {
     tf$squeeze(tf$less(iter, maxiter)) & tf$logical_not(converged)
   }
