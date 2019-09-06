@@ -81,13 +81,13 @@ iterate_dynamic_matrix <- function(
   niter <- as.integer(niter)
   state <- as.greta_array(initial_state)
   
-  # set dummy input for iterx
-  iterx <- as_data(1)
-  
   # what if iterables isn't provided?
   if (missing(iterables))
     iterables <- as_data(rep(1.0, niter))
-
+  
+  # set dummy input for iterx
+  iterx <- as_data(iterables[1])
+  
   # check input dimensions
   state_dim <- dim(state)
   state_n_dim <- length(state_dim)
