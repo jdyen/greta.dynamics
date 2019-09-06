@@ -86,7 +86,7 @@ iterate_dynamic_matrix <- function(
   
   # what if iterables isn't provided?
   if (missing(iterables))
-    iterables <- as_data(1L)
+    iterables <- as_data(rep(1.0, niter))
 
   # check input dimensions
   state_dim <- dim(state)

@@ -59,6 +59,9 @@ r_iterate_dynamic_matrix <- function (matrix_function, initial_state, niter = 10
 
   i <- 0L
   diff <- Inf
+  
+  if (is.null(iterables))
+    iterables <- rep(1, niter)
 
   while(i < niter & diff > tol) {
     i <- i + 1L
