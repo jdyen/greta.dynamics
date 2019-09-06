@@ -96,11 +96,10 @@ test_that("iteratable matrix arguments works", {
     
     # scale by total population
     Nt <- sum(state)
-    multiplier <- exp(- Nt * 1e-3)
-    base_matrix[1, 4] <- base_matrix[1, 4] * multiplier
-    
-    # return matrix
-    base_matrix
+    K <- 100
+    ratio <- exp(1 - Nt / K)
+    multiplier <- 1 + fec_mask * (ratio - 1)
+    base_matrix * multiplier
     
   }
   
@@ -112,11 +111,10 @@ test_that("iteratable matrix arguments works", {
     
     # scale by total population
     Nt <- sum(state)
-    multiplier <- exp(- Nt * 1e-3)
-    base_matrix[1, 4] <- base_matrix[1, 4] * multiplier
-    
-    # return matrix
-    base_matrix
+    K <- 100
+    ratio <- exp(1 - Nt / K)
+    multiplier <- 1 + fec_mask * (ratio - 1)
+    base_matrix * multiplier
     
   }
   
