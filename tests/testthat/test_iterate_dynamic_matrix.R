@@ -32,6 +32,7 @@ test_that("single iteration works", {
     initial_state = init,
     niter = niter,
     tol = tol,
+    iterables = NULL,
     base_matrix = base,
     fec_mask = fec_mask
   )
@@ -68,6 +69,105 @@ test_that("single iteration works", {
   greta_iterations <- calculate(iterations)
   expect_lt(greta_iterations, niter)
 
+})
+
+test_that("iteratable matrix arguments works", {
+  
+  skip_if_not(greta:::check_tf_version())
+  source ("helpers.R")
+  
+  n <- 4
+  base <- base_matrix(n)
+  fec_mask <- matrix(0, n, n)
+  fec_mask[1, n] <- 1
+  init <- rep(1, n)
+  alpha <- seq(1, n, by = 1)
+  beta <- seq(-2, 2, length = n)
+  niter <- 100
+  x <- seq(0.1, 0.9, length = niter)
+  tol <- 1e-8
+  test_tol <- tol * 100
+  
+  fun <- function(state, iter, iterx, base_matrix, fec_mask, alpha, beta) {
+    
+    # make survival parameters a function of a predictor iterx
+    survival <- ilogit(alpha + beta * iterx)
+    base_matrix[row(base_matrix) == col(base_matrix)] <- survival
+    
+    # scale by total population
+    Nt <- sum(state)
+    multiplier <- exp(- Nt * 1e-3)
+    base_matrix[1, 4] <- base_matrix[1, 4] * multiplier
+    
+    # return matrix
+    base_matrix
+    
+  }
+  
+  fun_r <- function(state, iter, iterx, base_matrix, fec_mask, alpha, beta) {
+    
+    # make survival parameters a function of a predictor iterx
+    survival <- plogis(alpha + beta * iterx)
+    base_matrix[row(base_matrix) == col(base_matrix)] <- survival
+    
+    # scale by total population
+    Nt <- sum(state)
+    multiplier <- exp(- Nt * 1e-3)
+    base_matrix[1, 4] <- base_matrix[1, 4] * multiplier
+    
+    # return matrix
+    base_matrix
+    
+  }
+  
+  # r version
+  r_iterates <- r_iterate_dynamic_matrix(
+    matrix_function = fun_r,
+    initial_state = init,
+    niter = niter,
+    tol = tol,
+    iterables = x,
+    base_matrix = base,
+    fec_mask = fec_mask,
+    alpha = alpha,
+    beta = beta
+  )
+  
+  target_stable <- r_iterates$stable_state
+  target_states <- r_iterates$all_states
+  
+  # greta version
+  iterates <- iterate_dynamic_matrix(
+    matrix_function = fun,
+    initial_state = init,
+    iterables = x,
+    niter = niter,
+    tol = tol,
+    base_matrix = base,
+    fec_mask = fec_mask,
+    alpha = alpha,
+    beta = beta
+  )
+  
+  stable <- iterates$stable_population
+  states <- iterates$all_states
+  converged <- iterates$converged
+  iterations <- iterates$iterations
+  
+  greta_stable <- calculate(stable)
+  difference <- abs(greta_stable - target_stable)
+  expect_true(all(difference < test_tol))
+  
+  greta_states <- calculate(states)
+  difference <- abs(greta_states - target_states)
+  expect_true(all(difference < test_tol))
+  
+  greta_converged <- calculate(converged)
+  expect_true(greta_converged == 1)
+  
+  greta_iterations <- calculate(iterations)
+  expect_lt(greta_iterations, niter)
+  
 })
 #
 # test_that("vectorised matrix iteration works", {

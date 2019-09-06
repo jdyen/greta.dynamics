@@ -154,7 +154,7 @@ iterate_dynamic_matrix <- function(
                    results,
                    tf_operation = "tf_extract_iterations",
                    dim = c(1, 1))
-
+  
   list(stable_population = stable_population,
        all_states = all_states,
        converged = converged,
@@ -254,7 +254,7 @@ tf_iterate_dynamic_matrix <- function (state, iterables, iterx, ..., tf_matrix_f
   # make a single slice (w.r.t. batch dimension) and tile along batch dimension
   state_dim <- dim(state)[-1]
   n_dim <- length(state_dim)
-
+  
   shp <- to_shape(c(niter, rev(state_dim[-n_dim]), 1))
   t_all_states_slice <- tf$zeros(shp, dtype = tf_float())
   batch_size <- tf$shape(state)[[0]]
@@ -311,6 +311,7 @@ tf_iterate_dynamic_matrix <- function (state, iterables, iterx, ..., tf_matrix_f
   # return some elements: the transposed tensor of all the states
   list(
     state = out[[1]],
+    iterx = out[[3]],
     t_all_states = out[[4]],
     growth_rates = out[[5]],
     converged = out[[6]],
@@ -352,4 +353,3 @@ get_nonbatch_dims <- function(x) {
   out[1] <- list(NULL)
   out
 }
-

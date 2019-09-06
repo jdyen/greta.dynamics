@@ -53,7 +53,7 @@ r_iterate_matrix <- function (matrix, initial_state, niter = 100, tol = 1e-6) {
 }
 
 # R versions of dynamics module methods
-r_iterate_dynamic_matrix <- function (matrix_function, initial_state, niter = 100, tol = 1e-6, ...) {
+r_iterate_dynamic_matrix <- function (matrix_function, initial_state, niter = 100, tol = 1e-6, iterables = NULL, ...) {
 
   states <- list(initial_state)
 
@@ -62,7 +62,7 @@ r_iterate_dynamic_matrix <- function (matrix_function, initial_state, niter = 10
 
   while(i < niter & diff > tol) {
     i <- i + 1L
-    matrix <- matrix_function(states[[i]], i, ...)
+    matrix <- matrix_function(states[[i]], i, iterables[i], ...)
     states[[i + 1]] <- matrix %*% states[[i]]
     growth <- states[[i + 1]] / states[[i]]
     diffs <- growth - 1
