@@ -39,7 +39,7 @@ r_iterate_matrix <- function (matrix, initial_state, niter = 100, tol = 1e-6) {
   }
 
   lambda <- states[[i]][1] / states[[i - 1]][1]
-  stable_distribution <- states[[i]]
+  stable_distribution <- states[[i + 1]]
   stable_distribution <- stable_distribution / sum(stable_distribution)
   all_states <- matrix(0, ncol(matrix), niter)
   states_keep <- states[-1]
@@ -73,7 +73,7 @@ r_iterate_dynamic_matrix <- function (matrix_function, initial_state, niter = 10
   states_keep <- states[-1]
   all_states[, seq_along(states_keep)] <- t(do.call(rbind, states_keep))
 
-  list(stable_state = states[[i]],
+  list(stable_state = states[[i + 1]],
        all_states = all_states,
        converged = as.integer(diff < tol),
        max_iter = i)
