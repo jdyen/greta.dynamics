@@ -28,11 +28,13 @@
 #'
 #' @param matrix_function a function taking in the previous population state and
 #'   the current iteration (and possibly other greta arrays) and returning a
-#'   transition matrix to use for this iteration. The first two arguments must
-#'   be named 'state' and 'iter', the state vector and scalar iteration number
-#'   respectively. The remaining parameters must be named arguments representing
-#'   (temporally static) model parameters. Variables and distributions cannot be
-#'   defined inside the function.
+#'   transition matrix to use for this iteration. The first three arguments must
+#'   be named 'state', 'iter', 'iterx', and are the state vector, scalar iteration
+#'   number and value of \code{iterables} at a single iteration, respectively.
+#'   The remaining parameters must be named arguments representing (temporally static)
+#'   model parameters. Variables and distributions cannot be defined inside the function.
+#' @param iterables a vector of values passed to \code{matrix_function} at each 
+#'   iteration.
 #' @param initial_state either a column vector (with m elements) or a 3D array
 #'   (with dimensions n x m x 1) giving one or more initial states from which to
 #'   iterate the matrix
