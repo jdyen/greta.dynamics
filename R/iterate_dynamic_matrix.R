@@ -85,11 +85,20 @@ iterate_dynamic_matrix <- function(
   
   # what if iterables isn't provided?
   if (missing(iterables))
-    iterables <- as_data(rep(1.0, niter))
+    iterables <- rep(1.0, niter)
   
-  # set dummy input for iterx
-  iterx <- as_data(iterables[1])
+  # convert data to a greta array to fix dims
+  iterables <- as_data(iterables)
+
+  # set a dummy input for iterx by extracting a slice of iterables along first axis
+  iter_dim <- dim(iterables)
+  iter_n_dim <- length(iter_dim)
+  iterx <- apply(as.matrix(iterables), seq_len(iter_n_dim)[-1], function(x) x[1])
+  iterx <- as_data(iterx)
   
+  # force correct dimensions on iterx (row not column vector if matrix)
+  dim(iterx) <- c(1, iter_dim[-1])
+
   # check input dimensions
   state_dim <- dim(state)
   state_n_dim <- length(state_dim)
