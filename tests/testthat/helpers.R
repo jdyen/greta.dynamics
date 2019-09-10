@@ -63,9 +63,12 @@ r_iterate_dynamic_matrix <- function (matrix_function, initial_state, niter = 10
   if (is.null(iterables))
     iterables <- rep(1, niter)
 
+  ndims <- length(dim(iterables))
+  
   while(i < niter & diff > tol) {
     i <- i + 1L
-    matrix <- matrix_function(states[[i]], i, iterables[i], ...)
+    iterx <- apply(iterables, seq_len(ndims)[-1], function(x) x[i])
+    matrix <- matrix_function(states[[i]], i, iterx, ...)
     states[[i + 1]] <- matrix %*% states[[i]]
     growth <- states[[i + 1]] / states[[i]]
     diffs <- growth - 1
